@@ -1,0 +1,20 @@
+{
+  "name": "adventofcode-ts",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "201901": "ts-node 2019/01.ts exec",
+    "test": "jest"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/jest": "^27.0.2",
+    "@types/node": "^16.10.3",
+    "jest": "^27.2.5",
+    "ts-jest": "^27.0.5",
+    "ts-node": "^10.2.1",
+    "typescript": "^4.4.3"
+  }
+}
