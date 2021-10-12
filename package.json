@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "201901": "ts-node 2019/01.ts exec",
+    "201901": "cd 2019 && ts-node 01.index.ts",
+    "201902": "cd 2019 && ts-node 02.index.ts",
     "test": "jest"
   },
   "author": "",
