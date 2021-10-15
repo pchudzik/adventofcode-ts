@@ -6,6 +6,8 @@
   "scripts": {
     "201901": "cd 2019 && ts-node 01.index.ts",
     "201902": "cd 2019 && ts-node 02.index.ts",
+    "201903": "cd 2019 && ts-node 03.index.ts",
+    "201904": "cd 2019 && ts-node 04.index.ts",
     "test": "jest"
   },
   "author": "",
