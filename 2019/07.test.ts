@@ -1,4 +1,11 @@
-import { executeProgram, findMaxThrustersSignal, IOHandler, permute, processor } from './07';
+import {
+  executeProgram,
+  findMaxThrustersSignal,
+  findMaxThrustersSignalAmplified,
+  generatorProcessor,
+  IOHandler,
+  permute
+} from './07';
 
 describe('07.ts', () => {
   const noIO: IOHandler = {
@@ -9,7 +16,7 @@ describe('07.ts', () => {
   test('sample1', () => {
     //given
     const program = [1, 9, 10, 3, 2, 3, 11, 0, 99, 30, 40, 50];
-    const programProcessor = processor(program, noIO)
+    const programProcessor = generatorProcessor(program, noIO)
 
     //when
     const step1 = programProcessor.next()
@@ -39,7 +46,7 @@ describe('07.ts', () => {
   ].forEach(([input, output]) => {
     test('computer', () => {
       //when
-      const result = executeProgram(processor(input, noIO));
+      const result = executeProgram(generatorProcessor(input, noIO));
 
       //then
       expect(result).toStrictEqual(output);
@@ -55,7 +62,7 @@ describe('07.ts', () => {
       }
     }
 
-    executeProgram(processor([3, 0, 4, 0, 99], io));
+    executeProgram(generatorProcessor([3, 0, 4, 0, 99], io));
 
     expect(output).toBe(10)
   });
@@ -65,7 +72,7 @@ describe('07.ts', () => {
     const program = [1002, 4, 3, 4, 33];
 
     //when
-    const result = executeProgram(processor(program, noIO));
+    const result = executeProgram(generatorProcessor(program, noIO));
 
     //then
     expect(result).toStrictEqual([1002, 4, 3, 4, 99])
@@ -140,7 +147,7 @@ describe('07.ts', () => {
     expect(result).toContain('321');
   });
 
-  describe('amplififiers', () => {
+  describe('amplifiers', () => {
     it('sample 1', () => {
       const program = [3, 15, 3, 16, 1002, 16, 10, 16, 1, 16, 15, 15, 4, 15, 99, 0, 0];
 
@@ -166,6 +173,24 @@ describe('07.ts', () => {
     });
   });
 
+  describe('amplifiers with feedback loop', () => {
+    it('sample 1', () => {
+      const program = [3, 26, 1001, 26, -4, 26, 3, 27, 1002, 27, 2, 27, 1, 27, 26, 27, 4, 27, 1001, 28, -1, 28, 1005, 28, 6, 99, 0, 0, 5];
+
+      const result = findMaxThrustersSignalAmplified(program)
+
+      expect(result).toBe(139629729);
+    });
+
+    it('sample 2', () => {
+      const program = [3, 52, 1001, 52, -5, 52, 3, 53, 1, 52, 56, 54, 1007, 54, 5, 55, 1005, 55, 26, 1001, 54, -5, 54, 1105, 1, 12, 1, 53, 54, 53, 1008, 54, 0, 55, 1001, 55, 1, 55, 2, 53, 55, 53, 4, 53, 1001, 56, -1, 56, 1005, 56, 6, 99, 0, 0, 0, 0, 10];
+
+      const result = findMaxThrustersSignalAmplified(program)
+
+      expect(result).toBe(18216);
+    });
+  });
+
   function executeWithInput(input: number, program: number[]): number {
     let output = -1
     const io: IOHandler = {
@@ -175,7 +200,7 @@ describe('07.ts', () => {
       }
     }
 
-    executeProgram(processor(program, io));
+    executeProgram(generatorProcessor(program, io));
 
     return output
   }

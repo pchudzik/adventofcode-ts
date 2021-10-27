@@ -64,7 +64,10 @@ const HaltOperation: Operation = {
 
 const InputOperation: Operation = {
   execute(registry) {
-    const input = registry.input;
+    const input = registry.input();
+    if (typeof (input) === 'undefined' || !registry.isRunning) {
+      return;
+    }
     const inputRegistry = registry.getAtIndex(FirstParam);
     registry.setValue(inputRegistry, input);
     registry.moveForward(2);
@@ -191,7 +194,7 @@ function commandFactory(processor: Registry): Operation {
 
   const cmd = commands[currentCmd.command]!;
   if (!cmd) {
-    throw Error(`Unknown operation ${(currentCmd.command)}. Pointer: ${processor.pointer}, registry: ${processor.registry}`)
+    throw new Error(`Unknown operation ${(currentCmd.command)}. Pointer: ${processor.pointer}, registry: ${processor.registry}`)
   }
   return cmd;
 }
@@ -204,7 +207,7 @@ export type IOHandler = {
 class Registry {
   private _registry: number[]
   private instructionPointer: number
-  private io: IOHandler
+  io: IOHandler
 
   constructor(registry: number[], inputProvider: IOHandler, instructionPointer = 0) {
     this._registry = registry
@@ -234,7 +237,7 @@ class Registry {
     return [...this._registry]
   }
 
-  get input() {
+  input() {
     return this.io.input();
   }
 
@@ -276,10 +279,10 @@ class Registry {
   }
 }
 
-type ProgramProcessor = Generator<number[], number[], void>
+type GeneratorProgramProcessor = Generator<number[], number[], void>
 type ProgramStep = IteratorResult<number[], number[]>
 
-export function* processor(program: number[], io: IOHandler): Generator<number[], number[], void> {
+export function* generatorProcessor(program: number[], io: IOHandler): GeneratorProgramProcessor {
   const registry = new Registry(program, io)
 
   while (true) {
@@ -292,7 +295,7 @@ export function* processor(program: number[], io: IOHandler): Generator<number[]
   }
 }
 
-export function executeProgram(program: ProgramProcessor): number[] {
+export function executeProgram(program: GeneratorProgramProcessor): number[] {
   let result: ProgramStep
   do {
     result = program.next()
@@ -345,19 +348,109 @@ class MultiInputIO implements IOHandler {
   }
 }
 
-function executeWithInputSequence(program: number[], inputSequence: number[]): number {
-  let thruster = new MultiInputIO([],);
-  for (const thrusterIndex of [0, 1, 2, 3, 4]) {
-    thruster = new MultiInputIO([inputSequence[thrusterIndex], thruster.result || 0])
-    executeProgram(processor([...program], thruster))
+export function findMaxThrustersSignal(program: number[]): number {
+  function executeWithInputSequence(program: number[], inputSequence: number[]): number {
+    let thruster = new MultiInputIO([],);
+    for (const thrusterIndex of [0, 1, 2, 3, 4]) {
+      thruster = new MultiInputIO([inputSequence[thrusterIndex], thruster.result || 0])
+      executeProgram(generatorProcessor([...program], thruster))
+    }
+
+    return thruster.result!;
   }
 
-  return thruster.result!;
-}
-
-export function findMaxThrustersSignal(program: number[]): number {
-  const sequences = permute([0, 1, 2, 3, 4]);
-  return sequences
+  return permute([0, 1, 2, 3, 4])
     .map(s => executeWithInputSequence([...program], s))
     .reduce((a, b) => a > b ? a : b);
 }
+
+class ProgramCoordinator {
+  private programs: Registry[]
+  lastOutput: number = NaN;
+
+  constructor(programs: Registry[]) {
+    this.programs = programs;
+  }
+
+  get currentProgramIo(): FeedbackLoopIo {
+    return this.programs[0].io as FeedbackLoopIo
+  }
+
+  get nextProgramIo(): FeedbackLoopIo {
+    return this.programs[1].io as FeedbackLoopIo;
+  }
+
+  switchToNextProgram() {
+    const currentProgram = this.programs.shift()!
+    this.programs.push(currentProgram);
+  }
+
+  runProgram() {
+    const registry = this.programs[0]
+    while (registry.isRunning) {
+      commandFactory(registry).execute(registry)
+    }
+  }
+
+  get anyRunning() {
+    return this.programs.some(p => p.isRunning);
+  }
+}
+
+class FeedbackLoopIo implements IOHandler {
+  name: string
+  programCoordinator: ProgramCoordinator | undefined
+  private inputs: number[]
+
+  constructor(name: string, inputs: number[]) {
+    this.name = name;
+    this.inputs = inputs
+  }
+
+  pushInput(val: number): void {
+    this.inputs.push(val);
+  }
+
+  input(): number {
+    while (this.inputs.length === 0 && this.programCoordinator!.anyRunning) {
+      this.programCoordinator!.switchToNextProgram()
+      this.programCoordinator!.runProgram()
+    }
+
+    return this.inputs.shift()!;
+  }
+
+  output(value: number): void {
+    this.programCoordinator!.nextProgramIo.pushInput(value)
+    this.programCoordinator!.lastOutput = value;
+  }
+}
+
+export function findMaxThrustersSignalAmplified(program: number[]): number {
+  function findMaxThrustersSignalAmplifiedUsingSequence(program: number[], inputSequence: number[]): number {
+    function createThruster(name: string, program: number[], startingInput: number[]): [Registry, FeedbackLoopIo] {
+      const io = new FeedbackLoopIo(name, startingInput);
+      const registry = new Registry([...program], io);
+      return [registry, io];
+    }
+
+    const aProgram = createThruster('A', program, [inputSequence[0], 0])
+    const bProgram = createThruster('B', program, [inputSequence[1]])
+    const cProgram = createThruster('C', program, [inputSequence[2]])
+    const dProgram = createThruster('D', program, [inputSequence[3]])
+    const eProgram = createThruster('E', program, [inputSequence[4]])
+
+    const allPrograms = [aProgram, bProgram, cProgram, dProgram, eProgram]
+
+    const coordinator = new ProgramCoordinator(allPrograms.map(p => p[0]));
+    allPrograms.map(p => p[1]).forEach(io => io.programCoordinator = coordinator);
+    coordinator.runProgram();
+
+    return coordinator.lastOutput;
+  }
+
+  return permute([5, 6, 7, 8, 9])
+    .map(s => findMaxThrustersSignalAmplifiedUsingSequence([...program], s))
+    .reduce((a, b) => a > b ? a : b);
+}
+
