@@ -1,9 +1,18 @@
-type Layer<T> = Array<Array<T>>
+type Layer = Array<Array<Color>>
 type DigitsCount = Record<number, number>;
 
-export function partitionToLayers<T>(array: T[], width: number, height: number): Layer<T>[] {
-  const result: Layer<T>[] = [];
-  let currentLayer: Layer<T> = [];
+const BlackColor = 0
+const WhiteColor = 1
+const TransparentColor = 2;
+
+type White = 0
+type Black = 1
+type Transparent = 2;
+type Color = White | Black | Transparent;
+
+export function partitionToLayers<T>(array: Color[], width: number, height: number): Layer[] {
+  const result: Layer[] = [];
+  let currentLayer: Layer = [];
   for (let i = 0; i < array.length; i += width) {
     const end = Math.min(i + width, array.length);
     currentLayer.push([...array.slice(i, end)]);
@@ -16,9 +25,9 @@ export function partitionToLayers<T>(array: T[], width: number, height: number):
   return result;
 }
 
-export function flatten<T>(layer: Layer<T>): T[] {
-  let result:T[] = []
-  for(const l of layer) {
+export function flatten(layer: Layer): Color[] {
+  let result: Color[] = []
+  for (const l of layer) {
     result = [...result, ...l];
   }
   return result;
@@ -40,8 +49,50 @@ export function countDigits(array: number[]): DigitsCount {
   return result;
 }
 
-export function calculateChecksum(input: number[]): number {
-  const partitioned = partitionToLayers(input, 25, 6);
+export function printImage(layers: Layer[]): string[] {
+  function printSinglePixel(pixelsInLayer: Color[]): number {
+    const result = pixelsInLayer.find(p => [WhiteColor, BlackColor].includes(p));
+    if (typeof result === 'undefined') {
+      return TransparentColor
+    }
+    return result;
+  }
+
+  const width = layers[0][0].length;
+  const height = layers[0].length;
+
+  const result: string[] = []
+  for (let h = 0; h < height; h++) {
+
+    let row: string[] = [];
+    for (let w = 0; w < width; w++) {
+
+      const pixels = layers.map(l => l[h][w])
+      const x = printSinglePixel(pixels);
+      row.push(x.toString());
+    }
+    result.push(row.join(''));
+    row = [];
+  }
+
+  return result;
+}
+
+export function prettyPrint(img: string[]): string {
+  return img
+    .map(r => r
+      .replace(new RegExp('' + WhiteColor, 'g'), 'X')
+      .replace(new RegExp('' + TransparentColor, 'g'), '')
+      .replace(new RegExp('' + BlackColor, 'g'), ' '))
+    .join('\n');
+}
+
+export function parseImage(str: string): Color[] {
+  return str.split('').map(s => parseInt(s) as Color);
+}
+
+export function calculateChecksum(input: Color[], width: number, heigth: 6): number {
+  const partitioned = partitionToLayers(input, width, heigth);
   const flattened = partitioned.map(flatten);
   const digitsCountByRow = flattened.map(countDigits);
   const rowWithFewestZeros = digitsCountByRow.reduce((a, b) => a[0] < b[0] ? a : b);

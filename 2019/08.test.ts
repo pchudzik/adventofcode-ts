@@ -1,9 +1,8 @@
-import { countDigits, flatten, partitionToLayers } from './08';
+import { countDigits, flatten, parseImage, partitionToLayers, printImage } from './08';
 import { expect } from '@jest/globals';
-import { main } from './08.index';
 
 describe('08.ts', () => {
-  const puzzle = '123456789012'.split('').map(s => parseInt(s));
+  const puzzle = parseImage('123456789012');
 
   it('splits input into layers', () => {
     const partitioned = partitionToLayers([...puzzle], 3, 2);
@@ -45,5 +44,13 @@ describe('08.ts', () => {
         0: 3
       });
     });
+  });
+
+  it('prints image', () => {
+    const layers = partitionToLayers(parseImage('0222112222120000'), 2, 2);
+
+    const image = printImage(layers);
+
+    expect(image).toStrictEqual(['01', '10']);
   });
 })
