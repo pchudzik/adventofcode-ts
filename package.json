@@ -11,6 +11,8 @@
     "201905": "cd 2019 && ts-node 05.index.ts",
     "201906": "cd 2019 && ts-node 06.index.ts",
     "201907": "cd 2019 && ts-node 07.index.ts",
+    "201908": "cd 2019 && ts-node 08.index.ts",
+    "201909": "cd 2019 && ts-node 09.index.ts",
     "test": "jest"
   },
   "author": "",
