@@ -1,10 +1,9 @@
-import exp from 'constants';
-import { removeLinesBeforeExternalMatcherTrap } from 'jest-snapshot/build/utils';
-
 export interface Coordinates {
   x: number
   y: number
   z: number
+
+  [key: string]: number;
 }
 
 function getEnergy(coordinates: Coordinates) {
@@ -37,6 +36,62 @@ export function tick(system: SatelliteSystemSnapshot, numberOfSteps = 10,) {
   return s;
 }
 
+export function findNumberOfStepsWhenPositionsAndVelocitiesAreTheSameAsAtTheBeginning(startingState: SatelliteSystemSnapshot) {
+  function calculateLCM(arr: number[]) {
+    function gcd2(a: number, b: number): number {
+      if (!b) {
+        return b === 0 ? a : NaN;
+      }
+      return gcd2(b, a % b);
+    }
+
+    function lcm2(a: number, b: number) {
+      return a * b / gcd2(a, b);
+    }
+
+    let n = 1;
+    for (let i = 0; i < arr.length; ++i) {
+      n = lcm2(arr[i], n);
+    }
+
+    return n;
+  }
+
+  function zip<T>(a1: T[], a2: T[]): T[][] {
+    const result: T[][] = [];
+
+    for (let i = 0; i < a1.length; i++) {
+      result.push([a1[i], a2[i]]);
+    }
+
+    return result;
+  }
+
+  function isAtStart(currentState: SatelliteSystemSnapshot, dimension: string) {
+    return zip(currentState.satellites, startingState.satellites)
+      .every(([currentSatellite, startingSatellite]) =>
+        currentSatellite.position[dimension] === startingSatellite.position[dimension]
+        && currentSatellite.velocity[dimension] === startingSatellite.velocity[dimension])
+  }
+
+  const result: Record<string, number> = {};
+
+  for (let dimension of ['x', 'y', 'z']) {
+    let s = startingState
+    let numberOfTicks = 0;
+    while (true) {
+      s = s.tick()
+      numberOfTicks++;
+      if (isAtStart(s, dimension)) {
+        result[dimension] = numberOfTicks;
+        break;
+      }
+    }
+  }
+
+  return calculateLCM(Object.values(result));
+}
+
 export class Satellite {
   position: Coordinates
   velocity: Coordinates
@@ -66,14 +121,23 @@ export class Satellite {
     const velocity = `vel=${toString(this.velocity)}`;
     return `${position}, ${velocity}`;
   }
+
+  toStringPositionOnly() {
+    return `pos=${toString(this.position)}`;
+  }
 }
 
 export class SatelliteSystemSnapshot {
-  private satellites: Satellite[]
+  satellites: Satellite[]
 
   constructor(satellites: Satellite[]) {
     this.satellites = [...satellites];
   }
+
+  toStringPositionOnly() {
+    return this.satellites.map(s => s.toStringPositionOnly()).join('\n');
+  }
+
 
   toString() {
     return this.satellites.map(s => s.toString()).join('\n');

@@ -1,5 +1,9 @@
-import { Satellite, SatelliteSystemSnapshot, tick } from './12';
-import exp from 'constants';
+import {
+  findNumberOfStepsWhenPositionsAndVelocitiesAreTheSameAsAtTheBeginning,
+  Satellite,
+  SatelliteSystemSnapshot,
+  tick
+} from './12';
 
 describe('12.ts', () => {
   it('simulates satellites movement 1', () => {
@@ -196,5 +200,31 @@ describe('12.ts', () => {
     ].join('\n'));
 
     expect(system100.totalEnergy).toBe(1940);
+  });
+
+  it('finds number of steps to get back to initial state 1', () => {
+    const system0 = new SatelliteSystemSnapshot([
+      new Satellite({x: -1, y: 0, z: 2}),
+      new Satellite({x: 2, y: -10, z: -7}),
+      new Satellite({x: 4, y: -8, z: 8}),
+      new Satellite({x: 3, y: 5, z: -1}),
+    ]);
+
+    const steps = findNumberOfStepsWhenPositionsAndVelocitiesAreTheSameAsAtTheBeginning(system0)
+
+    expect(steps).toBe(2772);
+  });
+
+  it('finds number of steps to get back to initial state 2', () => {
+    const system0 = new SatelliteSystemSnapshot([
+      new Satellite({x: -8, y: -10, z: 0}),
+      new Satellite({x: 5, y: 5, z: 10}),
+      new Satellite({x: 2, y: -7, z: 3}),
+      new Satellite({x: 9, y: -8, z: -3}),
+    ]);
+
+    const steps = findNumberOfStepsWhenPositionsAndVelocitiesAreTheSameAsAtTheBeginning(system0)
+
+    expect(steps).toBe(4686774924);
   });
 });
