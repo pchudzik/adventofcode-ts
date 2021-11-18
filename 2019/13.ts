@@ -249,53 +249,83 @@ type RobotOutputType = 'Color' | 'Direction';
 const EmptyTile = 0
 const WallTile = 1
 const BlockTile = 2
-const HorizontalPaddleTile = 3
+const PaddleTile = 3
 const BallTile = 4
 type Tile = 0 | 1 | 2 | 3 | 4;
 
-interface Screen {
+interface GameObject {
   x: number
   y: number
   tile: Tile
 }
 
 export class ScreenIOHandler implements IOHandler {
-  private screens: Screen[] = []
-  private currentScreen: Screen = ScreenIOHandler.newScreen();
+  private currentGameObject: GameObject = ScreenIOHandler.newGameObject();
   private static readonly xOutputState = 0;
   private static readonly yOutputState = 1;
   private static readonly tileOutputState = 2;
   private state = 0;
+  currentScore = 0;
+
+  private blocks: GameObject[] = []
+  private walls: GameObject[] = []
+  private paddlePosition:GameObject = {x:-1, y:-1, tile: PaddleTile}
+  private ballPosition:GameObject ={x:-1, y:-1, tile: BallTile};
 
   input(): number {
-    throw new Error('No input expected');
+    if(this.paddlePosition.x - this.ballPosition.x < 0) {
+      return 1;
+    } else if(this.paddlePosition.x - this.ballPosition.x > 0) {
+      return -1;
+    } else {
+      return 0
+    }
   }
 
   output(value: number): void {
     if (this.state == ScreenIOHandler.xOutputState) {
-      this.currentScreen.x = value;
+      this.currentGameObject.x = value;
       this.state = ScreenIOHandler.yOutputState;
     } else if (this.state == ScreenIOHandler.yOutputState) {
-      this.currentScreen.y = value;
+      this.currentGameObject.y = value;
       this.state = ScreenIOHandler.tileOutputState;
     } else if (this.state == ScreenIOHandler.tileOutputState) {
-      this.currentScreen.tile = value as Tile;
-      this.state = ScreenIOHandler.xOutputState;
-      this.screens.push(this.currentScreen);
-      this.currentScreen = ScreenIOHandler.newScreen()
+      if(this.currentGameObject.x === -1 && this.currentGameObject.y === 0) {
+        this.currentScore = value;
+        this.currentGameObject = ScreenIOHandler.newGameObject();
+        this.state = ScreenIOHandler.xOutputState;
+      } else {
+        if(value === BlockTile) {
+          this.currentGameObject.tile = value as Tile;
+          this.blocks.push(this.currentGameObject)
+        }  else if(value === WallTile) {
+          this.currentGameObject.tile = value as Tile;
+          this.walls.push(this.currentGameObject);
+        } else if(value ===BallTile) {
+          this.currentGameObject.tile = value as Tile;
+          this.ballPosition = this.currentGameObject;
+        } else if(value === PaddleTile){
+          this.currentGameObject.tile = value as Tile;
+          this.paddlePosition = this.currentGameObject;
+        } else {
+          this.currentScore = value;
+        }
+        this.state = ScreenIOHandler.xOutputState;
+        this.currentGameObject = ScreenIOHandler.newGameObject()
+      }
     }
   }
 
-  private static newScreen() {
+  private static newGameObject() {
     return {
       x: NaN,
       y: NaN,
       tile: EmptyTile
-    } as Screen;
+    } as GameObject;
   }
 
   get numberOfBlockTiles() {
-    return this.screens.filter(s => s.tile === BlockTile).length;
+    return this.blocks.filter(s => s.tile === BlockTile).length;
   }
 }
 
@@ -389,17 +419,17 @@ type ProgramProcessor = Generator<number[], number[], void>
 type ProgramStep = IteratorResult<number[], number[]>
 
 export function part1(puzzle: number[]) {
-  const robot = new ScreenIOHandler()
-  const program = processor(puzzle, robot);
+  const screen = new ScreenIOHandler()
+  const program = processor(puzzle, screen);
   executeProgram(program);
-  return robot.numberOfBlockTiles;
+  return screen.numberOfBlockTiles;
 }
 
 export function part2(puzzle: number[]) {
-  // const robot = new ScreenIOHandler(1);
-  // const program = processor(puzzle, robot);
-  // executeProgram(program);
-  // return robot.printHaul()
+  const screen = new ScreenIOHandler();
+  const program = processor(puzzle, screen);
+  executeProgram(program);
+  return screen.currentScore;
 }
 
 export function* processor(programInstructions: number[], io: IOHandler): ProgramProcessor {
