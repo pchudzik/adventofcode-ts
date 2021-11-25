@@ -130,7 +130,7 @@ describe('14.ts', () => {
        5 BHXH, 4 VRPVC => 5 LTCX`
     ]
   ].forEach(([oreAmount, puzzle]) => {
-    xit('finds amount of fuel with ORE cargo of size 1000000000000', () => {
+    it('finds amount of fuel with ORE cargo of size 1000000000000', () => {
       expect(part2(puzzle as string)).toBe(oreAmount);
     });
   })

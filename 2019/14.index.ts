@@ -1,7 +1,7 @@
 #!/usr/bin/env ts-node
 
 
-import { part1 } from './14';
+import { part1, part2 } from './14';
 
 const puzzle = `
 1 ZQVND => 2 MBZM
@@ -63,11 +63,9 @@ const puzzle = `
 4 PFSQF, 4 DMGF => 3 MRQJ
 `;
 
-// 1624848 too high
-// 1582325 correct
-// 917194 too low
 function main() {
   console.log(`1: ${part1(puzzle)}`)
+  console.log(`2: ${part2(puzzle)}`)
 }
 
 main()

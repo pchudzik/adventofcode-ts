@@ -17,6 +17,7 @@
     "201911": "cd 2019 && ts-node 11.index.ts",
     "201912": "cd 2019 && ts-node 12.index.ts",
     "201913": "cd 2019 && ts-node 13.index.ts",
+    "201914": "cd 2019 && ts-node 14.index.ts",
     "test": "jest"
   },
   "author": "",
